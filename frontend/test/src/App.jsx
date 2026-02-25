@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import './App.css'
+import { assets } from './assets/assets'
 
 // Get API URL from environment variables or use default
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001'
@@ -10,6 +11,45 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [useLocalLLM, setUseLocalLLM] = useState(false)
+
+  const [speechLang, setSpeechLang] = useState("en-IN")
+
+  const [isRecording, setIsRecording] = useState(false)
+  let recognition
+
+  const startStopRecording = () => {
+    if (!("webkitSpeechRecognition" in window)) {
+      setError("Voice input not supported in this browser.")
+      return
+    }
+
+    if (isRecording) {
+      recognition.stop()
+      setIsRecording(false)
+      return
+    }
+
+    recognition = new window.webkitSpeechRecognition()
+    recognition.continuous = false
+    recognition.interimResults = false
+    recognition.lang = speechLang   //<- need to set speech language
+
+    recognition.start()
+    setIsRecording(true)
+
+    recognition.onresult = (event) => {
+      const text = event.results[0][0].transcript
+      setQuestion(prev => prev + " " + text)
+    }
+
+    recognition.onerror = (err) => {
+      setError("Voice input error: " + err.error)
+      setIsRecording(false)
+    }
+
+    recognition.onend = () => setIsRecording(false)
+  }
+
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -57,6 +97,8 @@ function App() {
   return (
     <div className="app">
       <div className="container">
+
+        {/* Header */}
         <div className="header">
           <div className="icon-wrapper">
             <svg className="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -70,76 +112,102 @@ function App() {
         </div>
 
         <form onSubmit={handleSubmit} className="form">
-          <div className="input-wrapper">
-            <textarea
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Enter your question here..."
-              className="input"
-              rows="4"
-              disabled={loading}
-            />
-          </div>
 
-          <div className="toggle-container">
-            <label className="toggle-label">
-              <span className="toggle-text">
-                <svg className="toggle-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 3H5C3.89543 3 3 3.89543 3 5V9C3 10.1046 3.89543 11 5 11H9C10.1046 11 11 10.1046 11 9V5C11 3.89543 10.1046 3 9 3Z" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M19 3H15C13.8954 3 13 3.89543 13 5V9C13 10.1046 13.8954 11 15 11H19C20.1046 11 21 10.1046 21 9V5C21 3.89543 20.1046 3 19 3Z" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M9 13H5C3.89543 13 3 13.8954 3 15V19C3 20.1046 3.89543 21 5 21H9C10.1046 21 11 20.1046 11 19V15C11 13.8954 10.1046 13 9 13Z" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M19 13H15C13.8954 13 13 13.8954 13 15V19C13 20.1046 13.8954 21 15 21H19C20.1046 21 21 20.1046 21 19V15C21 13.8954 20.1046 13 19 13Z" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-                Use Local LLM
-              </span>
-              <div className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={useLocalLLM}
-                  onChange={(e) => setUseLocalLLM(e.target.checked)}
-                  disabled={loading}
-                  className="toggle-input"
-                />
-                <span className="toggle-slider"></span>
-              </div>
-            </label>
-            <p className="toggle-description">
-              {useLocalLLM ? 'Using local LLM for generation' : 'Using cloud AI services'}
-            </p>
-          </div>
-
-          <div className="button-group">
-            <button
-              type="submit"
-              className="button button-primary"
-              disabled={loading || !question.trim()}
-            >
-              {loading ? (
-                <>
-                  <span className="spinner"></span>
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <svg className="button-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Generate Content
-                </>
-              )}
-            </button>
-
-            {(response || error) && (
+            {/* Input text or voice */}
+            <div className="input-wrapper voice-input">
+              <textarea
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="Enter your question here..."
+                className="input"
+                rows="4"
+                disabled={loading}
+              />
               <button
                 type="button"
-                onClick={handleClear}
-                className="button button-secondary"
+                className={`mic-button ${isRecording ? "recording" : ""}`}
+                onClick={startStopRecording}
                 disabled={loading}
               >
-                Clear
+                {isRecording ? <img src={assets.stop_icon} alt="" /> : <img src={assets.mic_icon} alt="" /> }
               </button>
-            )}
-          </div>
+            </div>
+
+            <div className="language-box">
+              <label className="language-label">Speech Language</label>
+              <select
+                className="language-select"
+                value={speechLang}
+                onChange={(e) => setSpeechLang(e.target.value)}
+                disabled={loading}
+              >
+                <option value="en-IN">English</option>
+                <option value="hi-IN">Hindi</option>
+                <option value="bn-IN">Bengali</option>
+              </select>
+            </div>
+
+            {/* Choose format */}
+            <div className="toggle-container">
+              <label className="toggle-label">
+                <span className="toggle-text">
+                  <svg className="toggle-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 3H5C3.89543 3 3 3.89543 3 5V9C3 10.1046 3.89543 11 5 11H9C10.1046 11 11 10.1046 11 9V5C11 3.89543 10.1046 3 9 3Z" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M19 3H15C13.8954 3 13 3.89543 13 5V9C13 10.1046 13.8954 11 15 11H19C20.1046 11 21 10.1046 21 9V5C21 3.89543 20.1046 3 19 3Z" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M9 13H5C3.89543 13 3 13.8954 3 15V19C3 20.1046 3.89543 21 5 21H9C10.1046 21 11 20.1046 11 19V15C11 13.8954 10.1046 13 9 13Z" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M19 13H15C13.8954 13 13 13.8954 13 15V19C13 20.1046 13.8954 21 15 21H19C20.1046 21 21 20.1046 21 19V15C21 13.8954 20.1046 13 19 13Z" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                  Use Local LLM
+                </span>
+                <div className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={useLocalLLM}
+                    onChange={(e) => setUseLocalLLM(e.target.checked)}
+                    disabled={loading}
+                    className="toggle-input"
+                  />
+                  <span className="toggle-slider"></span>
+                </div>
+              </label>
+              <p className="toggle-description">
+                {useLocalLLM ? 'Using local LLM for generation' : 'Using cloud AI services'}
+              </p>
+            </div>
+
+            {/* Generating Button */}
+            <div className="button-group">
+              <button
+                type="submit"
+                className="button button-primary"
+                disabled={loading || !question.trim()}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner"></span>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <svg className="button-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Generate Content
+                  </>
+                )}
+              </button>
+
+              {(response || error) && (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="button button-secondary"
+                  disabled={loading}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
         </form>
 
         {error && (
