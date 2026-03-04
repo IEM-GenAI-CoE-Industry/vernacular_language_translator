@@ -26,8 +26,8 @@ function App() {
 
   const startStopRecording = () => {
     if (!("webkitSpeechRecognition" in window)) {
-      setError("Voice input not supported in this browser.")
-      return
+      setError("Voice input not supported in this browser.");
+      return;
     }
 
     if (isRecording && recognitionRef.current) {
@@ -46,14 +46,14 @@ function App() {
     setIsRecording(true)
 
     recognition.onresult = (event) => {
-      const text = event.results[0][0].transcript
-      setQuestion(prev => prev + " " + text)
-    }
+      const text = event.results[0][0].transcript;
+      setQuestion((prev) => prev + " " + text);
+    };
 
     recognition.onerror = (err) => {
-      setError("Voice input error: " + err.error)
-      setIsRecording(false)
-    }
+      setError("Voice input error: " + err.error);
+      setIsRecording(false);
+    };
 
     recognition.onend = () => setIsRecording(false)
   }
@@ -108,19 +108,22 @@ function App() {
         })
       }
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`)
-      }
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
 
       const data = await res.json()
       setResponse(data)
 
     } catch (err) {
-      setError(err.message || 'Failed to generate content. Please make sure the backend is running.')
+      setError(
+        err.message ||
+        "Failed to process request. Please check backend."
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleClear = () => {
     setQuestion('')
@@ -391,31 +394,28 @@ function App() {
                 )}
               </button>
 
-              {(response || error) && (
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  className="button button-secondary"
-                  disabled={loading}
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={handleClear}
+              className="button button-secondary"
+              disabled={loading}
+            >
+              Clear
+            </button>
+          </div>
         </form>
 
-        {error && (
-          <div className="alert alert-error">
-            <svg className="alert-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-              <path d="M12 8V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              <circle cx="12" cy="16" r="1" fill="currentColor"/>
-            </svg>
-            <p>{error}</p>
+        {error && <div className="alert alert-error">{error}</div>}
+
+        {response && (
+          <div className="response-card">
+            <h3>Generated Content:</h3>
+            <div>{response.data}</div>
           </div>
         )}
 
-        {response && (
+        {/* ✅ AUDIO PLAYER WITH CONTROLS */}
+        {audioUrl && (
           <div className="response-card">
             <div className="response-header">
               <svg className="response-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -477,8 +477,9 @@ function App() {
             </div>
           </div>
         )}
+
       </div>
     </div>
-  )
+  );
 }
 export default App
