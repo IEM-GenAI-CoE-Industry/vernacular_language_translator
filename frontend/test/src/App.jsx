@@ -28,6 +28,8 @@ function App() {
     if (!("webkitSpeechRecognition" in window)) {
       setError("Voice input not supported in this browser.");
       return;
+      setError("Voice input not supported in this browser.");
+      return;
     }
 
     if (isRecording && recognitionRef.current) {
@@ -49,8 +51,14 @@ function App() {
       const text = event.results[0][0].transcript;
       setQuestion((prev) => prev + " " + text);
     };
+      const text = event.results[0][0].transcript;
+      setQuestion((prev) => prev + " " + text);
+    };
 
     recognition.onerror = (err) => {
+      setError("Voice input error: " + err.error);
+      setIsRecording(false);
+    };
       setError("Voice input error: " + err.error);
       setIsRecording(false);
     };
@@ -111,6 +119,9 @@ function App() {
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
 
       const data = await res.json()
       setResponse(data)
@@ -120,9 +131,15 @@ function App() {
         err.message ||
         "Failed to process request. Please check backend."
       );
+      setError(
+        err.message ||
+        "Failed to process request. Please check backend."
+      );
     } finally {
       setLoading(false);
+      setLoading(false);
     }
+  };
   };
 
   const handleClear = () => {
@@ -403,8 +420,23 @@ function App() {
               Clear
             </button>
           </div>
+            <button
+              type="button"
+              onClick={handleClear}
+              className="button button-secondary"
+              disabled={loading}
+            >
+              Clear
+            </button>
+          </div>
         </form>
 
+        {error && <div className="alert alert-error">{error}</div>}
+
+        {response && (
+          <div className="response-card">
+            <h3>Generated Content:</h3>
+            <div>{response.data}</div>
         {error && <div className="alert alert-error">{error}</div>}
 
         {response && (
@@ -414,6 +446,8 @@ function App() {
           </div>
         )}
 
+        {/* ✅ AUDIO PLAYER WITH CONTROLS */}
+        {audioUrl && (
         {/* ✅ AUDIO PLAYER WITH CONTROLS */}
         {audioUrl && (
           <div className="response-card">
@@ -478,8 +512,10 @@ function App() {
           </div>
         )}
 
+
       </div>
     </div>
+  );
   );
 }
 export default App
